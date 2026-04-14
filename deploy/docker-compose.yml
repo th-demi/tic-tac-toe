@@ -4,8 +4,10 @@ services:
     entrypoint: ["/bin/sh", "-c"]
     command: >
       "
-      cockroach start-single-node --insecure &
-      sleep 8 &&
+      cockroach start-single-node --insecure --listen-addr=0.0.0.0:26257 &
+      until cockroach sql --insecure --host=localhost:26257 -e 'SELECT 1'; do
+        sleep 2;
+      done &&
       cockroach sql --insecure --host=localhost:26257 -e 'CREATE DATABASE IF NOT EXISTS nakama;' &&
       wait
       "
@@ -14,28 +16,63 @@ services:
       - "8080:8080"
     volumes:
       - cockroach_data:/cockroach/cockroach-data
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "cockroach",
+          "sql",
+          "--insecure",
+          "--host=localhost:26257",
+          "-e",
+          "SELECT 1"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
 
-  nakama:
+  backend-plugin:
     build:
       context: ../nakama
+      dockerfile: Dockerfile
+    image: tic-tac-toe-nakama-plugin:latest
+    volumes:
+      - plugin_output:/output
+    entrypoint: ["/bin/sh", "-c", "cp /tic-tac-toe-nakama.so /output/ && tail -f /dev/null"]
+
+  nakama-migrate:
+    image: heroiclabs/nakama:3.22.0
     depends_on:
-      - cockroachdb
-    ports:
-      - "7350:7350"
-      - "7349:7349"
+      cockroachdb:
+        condition: service_healthy
     entrypoint:
       - "/nakama/nakama"
     command:
+      - "migrate"
+      - "up"
       - "--database.address"
       - "root@cockroachdb:26257/nakama?sslmode=disable"
-      - "--logger.level"
-      - "INFO"
-      - "--session.encryption_key"
-      - "supersecretkey"
-      - "--socket.server_key"
-      - "defaultkey"
-      - "--runtime.path"
-      - "/nakama/data/modules"
+
+  nakama:
+    image: heroiclabs/nakama:3.22.0
+    depends_on:
+      cockroachdb:
+        condition: service_healthy
+      nakama-migrate:
+        condition: service_completed_successfully
+      backend-plugin:
+        condition: service_started
+    ports:
+      - "7350:7350"
+      - "7349:7349"
+    volumes:
+      - plugin_output:/nakama/data/modules
+      - ../nakama/local.yml:/nakama/data/local.yml
+    entrypoint:
+      - "/nakama/nakama"
+    command:
+      - "--config"
+      - "/nakama/data/local.yml"
     restart: unless-stopped
 
   frontend:
@@ -52,3 +89,4 @@ services:
 
 volumes:
   cockroach_data:
+  plugin_output:

@@ -18,14 +18,31 @@ func InitModule(
 	initializer runtime.Initializer,
 ) error {
 
-	logger.Info("initializing tic tac toe module")
+	logger.Error("##### InitModule STARTING #####")
 
 	if err := initializer.RegisterMatch(
 		"tic_tac_toe_match",
 		match.NewMatch,
 	); err != nil {
+		logger.Error("##### RegisterMatch FAILED: %v #####", err)
 		return err
 	}
+	logger.Error("##### RegisterMatch succeeded #####")
+
+	if err := initializer.RegisterMatchmakerMatched(
+		func(ctx context.Context, logger runtime.Logger, db *sql.DB, nk runtime.NakamaModule, entries []runtime.MatchmakerEntry) (string, error) {
+			matchID, err := nk.MatchCreate(ctx, "tic_tac_toe_match", map[string]interface{}{})
+			if err != nil {
+				return "", err
+			}
+			logger.Info("##### Matchmaker created match: %s #####", matchID)
+			return matchID, nil
+		},
+	); err != nil {
+		logger.Error("##### RegisterMatchmakerMatched FAILED: %v #####", err)
+		return err
+	}
+	logger.Error("##### RegisterMatchmakerMatched succeeded #####")
 
 	if err := initializer.RegisterRpc(
 		"create_room",

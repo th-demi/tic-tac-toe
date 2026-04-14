@@ -16,6 +16,8 @@ func CreateRoom(
 	payload string,
 ) (string, error) {
 
+	logger.Error(">>>>> CreateRoom RPC called!")
+
 	matchID, err := nk.MatchCreate(
 		ctx,
 		"tic_tac_toe_match",

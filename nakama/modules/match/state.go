@@ -34,6 +34,7 @@ type State struct {
 type ClientPlayer struct {
 	Username string `json:"username"`
 	Symbol   string `json:"symbol"`
+	UserID   string `json:"user_id"`
 }
 
 type ClientState struct {
@@ -53,6 +54,7 @@ func NewState() *State {
 		Winner:    "",
 		Completed: false,
 		Persisted: false,
+		Timer:     0,
 	}
 }
 
@@ -63,13 +65,20 @@ func BuildClientState(state *State) ClientState {
 		players = append(players, ClientPlayer{
 			Username: p.Username,
 			Symbol:   p.Symbol,
+			UserID:   p.UserID,
 		})
+	}
+
+	// Format winner for display
+	winner := state.Winner
+	if winner == "DRAW" {
+		winner = "DRAW"
 	}
 
 	return ClientState{
 		Board:       state.Board,
 		CurrentTurn: state.Turn,
-		Winner:      state.Winner,
+		Winner:      winner,
 		MatchID:     state.MatchID,
 		Timer:       state.Timer,
 		Players:     players,

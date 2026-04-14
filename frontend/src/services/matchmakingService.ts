@@ -2,16 +2,23 @@ import type { NakamaSocket } from "./nakamaClient";
 
 export async function startMatchmaking(socket: NakamaSocket) {
   return new Promise<{ match_id: string }>(async (resolve, reject) => {
-    socket.onmatchmakermatched = async (matched: { token: string }) => {
+    socket.onmatchmakermatched = async (matched: { token?: string; match_id?: string }) => {
       try {
-        const match = await socket.joinMatch(undefined, matched.token);
+        console.log('[startMatchmaking] matched:', matched);
+        // Use token if available, otherwise use match_id
+        const matchToken = matched.token || matched.match_id;
+        if (!matchToken) {
+          throw new Error("No token or match_id in matched result");
+        }
+        const match = await socket.joinMatch(matchToken);
         resolve(match);
       } catch (err) {
+        console.error('[startMatchmaking] error:', err);
         reject(err);
       }
     };
 
-    await socket.addMatchmaker("*", 2, 2);
+    await socket.addMatchmaker("*", 2, 2, { match_handler: "tic_tac_toe_match" });
   });
 }
 

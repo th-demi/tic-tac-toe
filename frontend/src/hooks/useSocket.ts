@@ -10,7 +10,9 @@ export function useSocket(session: NakamaSession | null) {
   const socketRef = useRef<NakamaSocket | null>(null);
   const connectedRef = useRef(false);
 
-  const setMatchState = useMatchStore((state) => state.setMatchState);
+const setMatchState = useMatchStore((state) => state.setMatchState);
+  const setMyUserId = useMatchStore((state) => state.setMyUserId);
+  const reset = useMatchStore((state) => state.reset);
 
   useEffect(() => {
     if (!session || connectedRef.current) return;
@@ -21,38 +23,70 @@ export function useSocket(session: NakamaSession | null) {
     let mounted = true;
 
     async function connect() {
-      const socket = client.createSocket();
+      try {
+        const socket = client.createSocket();
 
-      await socket.connect(activeSession, true);
+        socket.ondisconnect = (err) => {
+          console.log('[ondisconnect] socket disconnected, code:', err);
+          reset();
+        };
 
-      socket.onmatchdata = (message) => {
-        const payload = JSON.parse(new TextDecoder().decode(message.data));
+        console.log('[useSocket] connecting socket...');
+        await socket.connect(activeSession, true);
+        console.log('[useSocket] connected successfully');
 
-        setMatchState({
-          board: payload.board,
-          currentTurn: payload.current_turn,
-          winner: payload.winner || null,
-          timer: payload.timer,
-          matchId: payload.match_id || null,
-        });
-      };
+        // Set the user ID in the store after connecting
+        if (activeSession.user_id) {
+          console.log('[useSocket] setting myUserId:', activeSession.user_id);
+          setMyUserId(activeSession.user_id);
+        }
 
-      socket.onmatchpresence = (presence) => {
-        console.log("presence:", presence);
-      };
+        socket.onmatchdata = (message) => {
+          const opCode = typeof message.op_code === 'number' ? message.op_code : parseInt(message.op_code, 10);
+          console.log('[onmatchdata] received, op_code:', opCode, 'type:', typeof message.op_code, 'data length:', message.data?.length);
+          try {
+            const payload = JSON.parse(new TextDecoder().decode(message.data));
+            console.log('[onmatchdata] parsed payload:', JSON.stringify(payload));
 
-      if (mounted) {
-        socketRef.current = socket;
+            if (opCode === 1 && payload.board) {
+              setMatchState({
+                board: payload.board,
+                currentTurn: payload.current_turn || 'X',
+                winner: payload.winner || null,
+                timer: payload.timer ?? 30,
+                matchId: message.match_id || null,
+                players: payload.players || [],
+              });
+              console.log('[onmatchdata] state updated with board');
+            } else if (opCode === 1) {
+              console.log('[onmatchdata] ignoring move-only payload, waiting for full state');
+            }
+          } catch (err) {
+            console.error('[onmatchdata] error parsing:', err);
+          }
+        };
+
+        socket.onmatchpresence = (presence) => {
+          console.log('[onmatchpresence] presence:', presence);
+        };
+
+        if (mounted) {
+          socketRef.current = socket;
+          console.log('[useSocket] socket ref set');
+        }
+      } catch (err) {
+        console.error('[useSocket] connection error:', err);
       }
     }
 
     void connect();
 
     return () => {
+      console.log('[useSocket] cleanup, disconnecting socket');
       mounted = false;
       socketRef.current?.disconnect(false);
     };
-  }, [session, setMatchState]);
+  }, [session, setMatchState, reset]);
 
   return socketRef;
 }

@@ -5,14 +5,18 @@ database:
     - "root@cockroachdb:26257/nakama?sslmode=disable"
 
 logger:
-  level: "INFO"
+  level: "DEBUG"
 
 session:
   encryption_key: "supersecretkey"
   token_expiry_sec: 7200
+  refresh_enable: true
+  refresh_expiry_sec: 7200
 
 socket:
   server_key: "defaultkey"
+  max_session_idle_time: 3600
+  read_write_timeout: 60
 
 runtime:
   path: "/nakama/data/modules"
@@ -22,3 +26,5 @@ leaderboard:
 
 match:
   input_queue_size: 128
+  tick_rate: 100
+  max_empty_ticks: 300

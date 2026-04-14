@@ -4,9 +4,8 @@ WORKDIR /backend
 
 COPY . .
 
-RUN go build --trimpath --buildmode=plugin -o backend.so
+RUN go build --trimpath --buildmode=plugin -o tic-tac-toe-nakama.so
 
-FROM heroiclabs/nakama:3.22.0
+FROM alpine:latest
 
-COPY --from=builder /backend/backend.so /nakama/data/modules/
-COPY local.yml /nakama/data/
+COPY --from=builder /backend/tic-tac-toe-nakama.so /tic-tac-toe-nakama.so

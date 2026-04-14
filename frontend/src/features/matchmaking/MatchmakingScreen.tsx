@@ -14,6 +14,7 @@ export function MatchmakingScreen({ socket }: Props) {
   const setMatchState = useMatchStore(
     (state: ReturnType<typeof useMatchStore.getState>) => state.setMatchState
   );
+  const setInMatchmaking = useMatchStore((state) => state.setInMatchmaking);
 
   const startedRef = useRef(false);
 
@@ -25,6 +26,7 @@ export function MatchmakingScreen({ socket }: Props) {
 
     async function beginMatchmaking() {
       try {
+        setInMatchmaking(true);
         const match = await startMatchmaking(activeSocket);
 
         setMatchState({
@@ -32,11 +34,12 @@ export function MatchmakingScreen({ socket }: Props) {
         });
       } catch (err) {
         console.error("matchmaking failed:", err);
+        setInMatchmaking(false);
       }
     }
 
     void beginMatchmaking();
-  }, [socket, setMatchState]);
+  }, [socket, setMatchState, setInMatchmaking]);
 
   return (
     <section className="flex flex-col items-center gap-4">
