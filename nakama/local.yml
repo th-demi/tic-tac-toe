@@ -1,0 +1,24 @@
+name: "tic-tac-toe"
+
+database:
+  address:
+    - "root@cockroachdb:26257/nakama?sslmode=disable"
+
+logger:
+  level: "INFO"
+
+session:
+  encryption_key: "supersecretkey"
+  token_expiry_sec: 7200
+
+socket:
+  server_key: "defaultkey"
+
+runtime:
+  path: "/nakama/data/modules"
+
+leaderboard:
+  callback_queue_size: 65536
+
+match:
+  input_queue_size: 128

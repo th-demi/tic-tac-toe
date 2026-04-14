@@ -1,0 +1,40 @@
+# Environment
+.env
+.env.local
+.env.production
+.env.example
+
+# Frontend
+frontend/node_modules
+frontend/dist
+frontend/.vite
+frontend/.pnpm-store
+
+# Backend
+nakama/backend.so
+nakama/vendor
+
+# Go
+*.test
+*.out
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode
+.idea
+
+# Docker
+*.pid
+cockroach-data
+
+# Coverage
+coverage.out
+
+#others
+codebase_dump.txt
