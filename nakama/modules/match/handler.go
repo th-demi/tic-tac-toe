@@ -32,6 +32,10 @@ func (m *Match) MatchInit(
 
 	state := NewState()
 
+	if matchID, ok := ctx.Value(runtime.RUNTIME_CTX_MATCH_ID).(string); ok {
+		state.MatchID = matchID
+	}
+
 	ResetDeadline(state)
 
 	return state, 1, core.MatchLabel

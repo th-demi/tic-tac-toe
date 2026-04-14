@@ -23,12 +23,19 @@ services:
     ports:
       - "7350:7350"
       - "7349:7349"
-    command:
+    entrypoint:
       - "/nakama/nakama"
-      - "--config"
-      - "/nakama/data/local.yml"
-    # environment:
-    #   - DATABASE_ADDRESS=root@cockroachdb:26257
+    command:
+      - "--database.address"
+      - "root@cockroachdb:26257/nakama?sslmode=disable"
+      - "--logger.level"
+      - "INFO"
+      - "--session.encryption_key"
+      - "supersecretkey"
+      - "--socket.server_key"
+      - "defaultkey"
+      - "--runtime.path"
+      - "/nakama/data/modules"
     restart: unless-stopped
 
   frontend:
@@ -42,7 +49,6 @@ services:
       - "5173:5173"
     depends_on:
       - nakama
-
 
 volumes:
   cockroach_data:

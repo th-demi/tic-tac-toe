@@ -1,12 +1,16 @@
-import { startMatchmaking } from '../services/matchmakingService';
-import { NakamaSocket } from '../services/nakamaClient';
+import { startMatchmaking } from "../services/matchmakingService";
+import { NakamaSocket } from "../services/nakamaClient";
 
 export function useMatchmaking(socket: NakamaSocket | null) {
   async function findMatch() {
-    return startMatchmaking(socket);
+    if (!socket) {
+      throw new Error("Socket unavailable");
+    }
+
+    return await startMatchmaking(socket);
   }
 
   return {
-    findMatch
+    findMatch,
   };
 }

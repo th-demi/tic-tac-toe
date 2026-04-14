@@ -1,13 +1,13 @@
-import { useEffect, useState } from 'react';
-import { authenticateDevice } from './services/nakamaClient';
-import { useAuthStore } from './store/authStore';
-import { useMatchStore } from './store/matchStore';
+import { useEffect, useRef, useState } from "react";
+import { authenticateDevice } from "./services/nakamaClient";
+import { useAuthStore } from "./store/authStore";
+import { useMatchStore } from "./store/matchStore";
 
-import { NicknameScreen } from './features/auth/NicknameScreen';
-import { MatchmakingScreen } from './features/matchmaking/MatchmakingScreen';
-import { GameScreen } from './features/game/GameScreen';
+import { NicknameScreen } from "./features/auth/NicknameScreen";
+import { MatchmakingScreen } from "./features/matchmaking/MatchmakingScreen";
+import { GameScreen } from "./features/game/GameScreen";
 
-import { useSocket } from './hooks/useSocket';
+import { useSocket } from "./hooks/useSocket";
 
 export default function App() {
   const session = useAuthStore((s) => s.session);
@@ -18,7 +18,12 @@ export default function App() {
 
   const [inMatchmaking, setInMatchmaking] = useState(false);
 
+  const bootstrappedRef = useRef(false);
+
   useEffect(() => {
+    if (bootstrappedRef.current) return;
+    bootstrappedRef.current = true;
+
     async function bootstrap() {
       const deviceId = crypto.randomUUID();
       const auth = await authenticateDevice(deviceId);

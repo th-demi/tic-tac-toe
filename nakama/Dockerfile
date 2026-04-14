@@ -1,11 +1,10 @@
-FROM golang:1.23 AS builder
+FROM heroiclabs/nakama-pluginbuilder:3.22.0 AS builder
 
 WORKDIR /backend
 
 COPY . .
 
-RUN go mod tidy
-RUN go build -buildmode=plugin -o backend.so
+RUN go build --trimpath --buildmode=plugin -o backend.so
 
 FROM heroiclabs/nakama:3.22.0
 

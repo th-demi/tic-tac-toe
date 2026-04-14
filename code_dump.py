@@ -13,6 +13,7 @@ EXCLUDE_FROM_TREE = {
     "dist",
     "build",
     "code_dump.py",
+    ".pnpm-store"
 }
 
 EXCLUDE_FROM_CONTENT = {
@@ -22,6 +23,11 @@ EXCLUDE_FROM_CONTENT = {
     "package-lock.json",
     "code_dump.py",
     "pnpm-lock.yaml",
+    "nakama-binary",
+    ".pnpm-store",
+    # "frontend",
+    # "nakama",
+    # "deploy",
 }
 
 # -------------------------------

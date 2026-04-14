@@ -1,33 +1,38 @@
-import { useEffect } from 'react';
-import { Spinner } from '../../components/ui/Spinner';
+import { useEffect, useRef } from "react";
+import { Spinner } from "../../components/ui/Spinner";
 
-import { useMatchStore } from '../../store/matchStore';
-import { startMatchmaking } from '../../services/matchmakingService';
+import { useMatchStore } from "../../store/matchStore";
+import { startMatchmaking } from "../../services/matchmakingService";
 
-import type { NakamaSocket } from '../../services/nakamaClient';
+import type { NakamaSocket } from "../../services/nakamaClient";
 
 interface Props {
   socket: NakamaSocket | null;
 }
 
 export function MatchmakingScreen({ socket }: Props) {
-  const setMatchState = useMatchStore((s) => s.setMatchState);
+  const setMatchState = useMatchStore(
+    (state: ReturnType<typeof useMatchStore.getState>) => state.setMatchState
+  );
+
+  const startedRef = useRef(false);
 
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || startedRef.current) return;
+
+    const activeSocket = socket;
+    startedRef.current = true;
 
     async function beginMatchmaking() {
-      await startMatchmaking(socket);
-
-      socket.onmatchmakermatched = async (matched) => {
-        const match = await socket.joinMatch(
-          matched.match_id
-        );
+      try {
+        const match = await startMatchmaking(activeSocket);
 
         setMatchState({
-          matchId: match.match_id
+          matchId: match.match_id,
         });
-      };
+      } catch (err) {
+        console.error("matchmaking failed:", err);
+      }
     }
 
     void beginMatchmaking();

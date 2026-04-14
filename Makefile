@@ -22,3 +22,9 @@ clean:
 	rm -f nakama/backend.so
 	rm -rf frontend/node_modules
 	rm -rf frontend/dist
+
+docker run --rm \
+  --network deploy_default \
+  heroiclabs/nakama:3.22.0 \
+  migrate up \
+  --database.address root@cockroachdb:26257/nakama?sslmode=disable

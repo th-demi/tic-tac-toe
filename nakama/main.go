@@ -63,7 +63,6 @@ func InitModule(
 		"best",
 		"",
 		nil,
-		true,
 	)
 
 	if err != nil {
