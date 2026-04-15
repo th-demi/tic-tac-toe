@@ -4,31 +4,48 @@ services:
     command: start-single-node --insecure
     volumes:
       - cockroach_data:/cockroach/cockroach-data
+    healthcheck:
+      test: ["CMD", "cockroach", "sql", "--insecure", "--host=localhost:26257", "-e", "SELECT 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
 
-  nakama:
+  backend-plugin:
     build:
       context: ../nakama
-    depends_on:
-      - cockroachdb
-    restart: always
-
-  nginx:
-    image: nginx:1.27-alpine
-    ports:
-      - "80:80"
+      dockerfile: Dockerfile
+    image: tic-tac-toe-nakama-plugin:latest
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
-    depends_on:
-      - frontend
-      - nakama
+      - plugin_output:/output
+    entrypoint: ["/bin/sh", "-c", "cp /tic-tac-toe-nakama.so /output/ && tail -f /dev/null"]
 
-  frontend:
-    image: node:22-alpine
-    working_dir: /app
+  nakama-migrate:
+    image: heroiclabs/nakama:3.22.0
+    depends_on:
+      cockroachdb:
+        condition: service_healthy
+    entrypoint: ["/nakama/nakama"]
+    command: ["migrate", "up", "--database.address", "root@cockroachdb:26257/nakama?sslmode=disable"]
+    restart: on-failure
+
+  nakama:
+    image: heroiclabs/nakama:3.22.0
+    depends_on:
+      cockroachdb:
+        condition: service_healthy
+      backend-plugin:
+        condition: service_started
+      nakama-migrate:
+        condition: service_completed_successfully
     volumes:
-      - ../frontend:/app
-    command: sh -c "corepack enable && pnpm install && pnpm build && pnpm preview --host"
-    restart: always
+      - plugin_output:/nakama/data/modules
+    environment:
+      - DATABASE_URL=root@cockroachdb:26257/nakama?sslmode=disable
+    entrypoint: ["/nakama/nakama"]
+    command: []
+    restart: unless-stopped
 
 volumes:
   cockroach_data:
+  plugin_output:
