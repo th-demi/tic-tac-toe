@@ -72,12 +72,19 @@ func InitModule(
 		return err
 	}
 
+	if err := initializer.RegisterRpc(
+		"list_rooms",
+		rpc.ListRooms,
+	); err != nil {
+		return err
+	}
+
 	err := nk.LeaderboardCreate(
 		ctx,
 		"global_wins",
-		false,
+		true,
 		"desc",
-		"best",
+		"increment",
 		"",
 		nil,
 	)

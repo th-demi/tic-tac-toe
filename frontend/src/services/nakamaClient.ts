@@ -1,8 +1,5 @@
-import {
-  Client,
-  Session
-} from '@heroiclabs/nakama-js';
-import { nakamaConfig } from '../config/nakama';
+import { Client, Session } from "@heroiclabs/nakama-js";
+import { nakamaConfig } from "../config/nakama";
 
 export const client = new Client(
   nakamaConfig.serverKey,
@@ -14,6 +11,6 @@ export const client = new Client(
 export type NakamaSocket = ReturnType<typeof client.createSocket>;
 export type NakamaSession = Session;
 
-export async function authenticateDevice(deviceId: string) {
-  return client.authenticateDevice(deviceId, true);
+export async function authenticateDevice(deviceId: string, username?: string) {
+  return client.authenticateDevice(deviceId, true, username);
 }

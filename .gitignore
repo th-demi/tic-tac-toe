@@ -13,6 +13,7 @@ frontend/.pnpm-store
 # Backend
 nakama/backend.so
 nakama/vendor
+tic-tac-toe-nakama.so
 
 # Go
 *.test

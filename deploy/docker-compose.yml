@@ -25,7 +25,7 @@ services:
           "--insecure",
           "--host=localhost:26257",
           "-e",
-          "SELECT 1"
+          "SELECT 1",
         ]
       interval: 5s
       timeout: 5s
@@ -38,7 +38,12 @@ services:
     image: tic-tac-toe-nakama-plugin:latest
     volumes:
       - plugin_output:/output
-    entrypoint: ["/bin/sh", "-c", "cp /tic-tac-toe-nakama.so /output/ && tail -f /dev/null"]
+    entrypoint:
+      [
+        "/bin/sh",
+        "-c",
+        "cp /tic-tac-toe-nakama.so /output/ && tail -f /dev/null",
+      ]
 
   nakama-migrate:
     image: heroiclabs/nakama:3.22.0
@@ -58,8 +63,6 @@ services:
     depends_on:
       cockroachdb:
         condition: service_healthy
-      nakama-migrate:
-        condition: service_completed_successfully
       backend-plugin:
         condition: service_started
     ports:

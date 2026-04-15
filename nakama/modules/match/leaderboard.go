@@ -22,16 +22,22 @@ func PersistMatchResult(
 	state *State,
 ) {
 
+	logger.Info(">>> PersistMatchResult called, Winner=%q, Players=%d", state.Winner, len(state.Players))
+
 	if state.Winner == "" {
+		logger.Info("PersistMatchResult: no winner, exiting")
 		return
 	}
 
 	for _, player := range state.Players {
+		logger.Info("Processing player=%s username=%s symbol=%s", player.UserID, player.Username, player.Symbol)
 
 		result := ResolvePlayerResult(
 			player.Symbol,
 			state.Winner,
 		)
+
+		logger.Info("Player result: %s", result)
 
 		updateLeaderboard(
 			ctx,
@@ -60,9 +66,13 @@ func updateLeaderboard(
 ) {
 
 	if result != core.ResultWin {
+		logger.Info("updateLeaderboard: result %q != WIN, skipping for user=%s", result, player.UserID)
 		return
 	}
 
+	logger.Info("updateLeaderboard: writing win for user=%s username=%s", player.UserID, player.Username)
+
+	// Use value=1 and let Nakama handle the increment based on the operator
 	_, err := nk.LeaderboardRecordWrite(
 		ctx,
 		"global_wins",
@@ -76,6 +86,8 @@ func updateLeaderboard(
 
 	if err != nil {
 		logger.Error("leaderboard write failed user=%s err=%v", player.UserID, err)
+	} else {
+		logger.Info("leaderboard write SUCCESS for user=%s username=%s", player.UserID, player.Username)
 	}
 }
 

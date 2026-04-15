@@ -62,10 +62,21 @@ func (m *Match) MatchJoinAttempt(
 
 	s := state.(*State)
 
+	userID := presence.GetUserId()
+	logger.Info("#### MatchJoinAttempt: user_id=%s, existing_players=%d", userID, len(s.Players))
+
+	// If player already exists in the match, allow rejoin
+	if _, exists := s.Players[userID]; exists {
+		logger.Info("#### Allowing rejoin for existing player: %s", userID)
+		return s, true, ""
+	}
+
+	// If match is full, reject new players
 	if len(s.Players) >= 2 {
 		return s, false, core.ErrMatchFull.Error()
 	}
 
+	// Allow new player to join
 	return s, true, ""
 }
 
@@ -85,6 +96,16 @@ func (m *Match) MatchJoin(
 	s := state.(*State)
 
 	for _, presence := range presences {
+		userID := presence.GetUserId()
+		
+		// Check if player already exists (rejoining)
+		if existing, exists := s.Players[userID]; exists {
+			logger.Info("#### Rejoining player: %s (symbol: %s)", userID, existing.Symbol)
+			// Update presence reference
+			existing.Presence = presence
+			continue
+		}
+
 		// Assign X to first player, O to second player
 		symbol := core.PlayerX
 		if len(s.Players) >= 1 {
@@ -139,30 +160,38 @@ func (m *Match) MatchLeave(
 
 	s := state.(*State)
 
+	// If match already completed, do nothing
+	if s.Completed {
+		return s
+	}
+
 	for _, presence := range presences {
-		delete(s.Players, presence.GetUserId())
-		logger.Error("#### Player left: %s", presence.GetUserId())
+		userID := presence.GetUserId()
+		logger.Info("#### Player left: %s", userID)
+		
+		// Remove player from the match
+		delete(s.Players, userID)
 	}
 
+	// If both players left, mark as abandoned
 	if len(s.Players) == 0 {
+		logger.Info("#### All players left, marking match as abandoned")
 		s.Completed = true
 		s.Winner = "ABANDONED"
-	} else {
-		// Notify remaining player that opponent left
-		s.Winner = "ABANDONED"
-		s.Completed = true
+		
+		// Broadcast final state
+		clientState := BuildClientState(s)
+		data, _ := json.Marshal(clientState)
+		_ = dispatcher.BroadcastMessage(
+			core.OpCodeMove,
+			data,
+			nil,
+			nil,
+			true,
+		)
 	}
-
-	// Broadcast the updated state
-	clientState := BuildClientState(s)
-	data, _ := json.Marshal(clientState)
-	_ = dispatcher.BroadcastMessage(
-		core.OpCodeMove,
-		data,
-		nil,
-		nil,
-		true,
-	)
+	// If only one player left, match continues - remaining player can wait or win by default
+	// The match is NOT immediately ended - the player can reconnect
 
 	return s
 }
@@ -238,6 +267,12 @@ func (m *Match) MatchLoop(
 
 		logger.Info("### Move applied, board now=%v, turn=%s", s.Board, s.Turn)
 		ResetDeadline(s)
+
+		if s.Completed && !s.Persisted {
+			logger.Info("### Match completed by move, persisting result immediately")
+			PersistMatchResult(ctx, logger, nk, s)
+			s.Persisted = true
+		}
 	}
 
 	// Only update timer if both players have joined

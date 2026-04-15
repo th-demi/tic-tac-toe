@@ -1,7 +1,7 @@
-import { useMatchStore } from '../../store/matchStore';
+import { useMatchStore } from "../../store/matchStore";
 
 export function TurnIndicator() {
-  const currentTurn = useMatchStore((s) => s.currentTurn ?? 'X');
+  const currentTurn = useMatchStore((s) => s.currentTurn ?? "X");
   const mySymbol = useMatchStore((s) => s.mySymbol);
   const winner = useMatchStore((s) => s.winner);
 
@@ -9,11 +9,12 @@ export function TurnIndicator() {
     return null;
   }
 
-  const isMyTurn = mySymbol && currentTurn === mySymbol;
+  const isMyTurn = Boolean(mySymbol && currentTurn === mySymbol);
+  const turnLabel = isMyTurn ? "Your Turn" : "Opponent's Turn";
 
   return (
     <div className="text-center font-medium text-lg">
-      {isMyTurn ? "Your Turn" : "Opponent's Turn"}
+      {`${turnLabel} (${currentTurn})`}
     </div>
   );
 }

@@ -2,9 +2,12 @@ import type { NakamaSocket } from "./nakamaClient";
 
 export async function startMatchmaking(socket: NakamaSocket) {
   return new Promise<{ match_id: string }>(async (resolve, reject) => {
-    socket.onmatchmakermatched = async (matched: { token?: string; match_id?: string }) => {
+    socket.onmatchmakermatched = async (matched: {
+      token?: string;
+      match_id?: string;
+    }) => {
       try {
-        console.log('[startMatchmaking] matched:', matched);
+        console.log("[startMatchmaking] matched:", matched);
         // Use token if available, otherwise use match_id
         const matchToken = matched.token || matched.match_id;
         if (!matchToken) {
@@ -13,12 +16,14 @@ export async function startMatchmaking(socket: NakamaSocket) {
         const match = await socket.joinMatch(matchToken);
         resolve(match);
       } catch (err) {
-        console.error('[startMatchmaking] error:', err);
+        console.error("[startMatchmaking] error:", err);
         reject(err);
       }
     };
 
-    await socket.addMatchmaker("*", 2, 2, { match_handler: "tic_tac_toe_match" });
+    await socket.addMatchmaker("*", 2, 2, {
+      match_handler: "tic_tac_toe_match",
+    });
   });
 }
 
@@ -45,4 +50,29 @@ export async function joinCustomRoom(
   }
 
   return socket.joinMatch(matchId);
+}
+
+export interface RoomInfo {
+  matchId: string;
+  playerCount: number;
+}
+
+export async function listRooms(
+  socket: NakamaSocket | null
+): Promise<RoomInfo[]> {
+  if (!socket) {
+    throw new Error("Socket unavailable");
+  }
+
+  const result = await socket.rpc("list_rooms");
+
+  if (!result.payload) {
+    return [];
+  }
+
+  try {
+    return JSON.parse(result.payload);
+  } catch {
+    return [];
+  }
 }
