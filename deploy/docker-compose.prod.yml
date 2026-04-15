@@ -40,10 +40,9 @@ services:
         condition: service_completed_successfully
     volumes:
       - plugin_output:/nakama/data/modules
-    environment:
-      - DATABASE_URL=root@cockroachdb:26257/nakama?sslmode=disable
+      - ../nakama/local.yml:/nakama/data/local.yml
     entrypoint: ["/nakama/nakama"]
-    command: []
+    command: ["--config", "/nakama/data/local.yml"]
     restart: unless-stopped
 
 volumes:
