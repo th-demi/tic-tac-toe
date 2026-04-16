@@ -4,6 +4,7 @@ import {
   type NakamaSession,
   type NakamaSocket,
 } from "../services/nakamaClient";
+import { nakamaConfig } from "../config/nakama";
 import { useMatchStore } from "../store/matchStore";
 import { joinCustomRoom } from "../services/matchmakingService";
 
@@ -17,7 +18,6 @@ export function useSocket(session: NakamaSession | null) {
   const reset = useMatchStore((state) => state.reset);
   const getStoredMatchId = useMatchStore((state) => state.getStoredMatchId);
 
-  // Function to attempt reconnection to stored match
   async function attemptReconnect(socket: NakamaSocket) {
     if (reconnectingRef.current) {
       console.log("[useSocket] Already attempting reconnect, skipping");
@@ -39,7 +39,6 @@ export function useSocket(session: NakamaSession | null) {
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       console.log("[useSocket] Failed to rejoin match:", errorMessage);
-      // Clear stored match if rejoin failed (match probably ended)
       useMatchStore.getState().reset();
     } finally {
       reconnectingRef.current = false;
@@ -56,18 +55,16 @@ export function useSocket(session: NakamaSession | null) {
 
     async function connect() {
       try {
-        const socket = client.createSocket();
+        const socket = client.createSocket(nakamaConfig.useSSL);
 
         socket.ondisconnect = (err) => {
           console.log("[ondisconnect] socket disconnected, code:", err);
-          // Don't reset on disconnect - we want to persist match state for reconnection
         };
 
         console.log("[useSocket] connecting socket...");
         await socket.connect(activeSession, true);
         console.log("[useSocket] connected successfully");
 
-        // Set the user ID in the store after connecting
         if (activeSession.user_id) {
           console.log("[useSocket] setting myUserId:", activeSession.user_id);
           setMyUserId(activeSession.user_id);
@@ -121,7 +118,6 @@ export function useSocket(session: NakamaSession | null) {
           socketRef.current = socket;
           console.log("[useSocket] socket ref set");
 
-          // After socket is set, try to reconnect to stored match
           await attemptReconnect(socket);
         }
       } catch (err) {
