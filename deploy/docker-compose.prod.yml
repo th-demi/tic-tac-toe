@@ -5,7 +5,16 @@ services:
     volumes:
       - cockroach_data:/cockroach/cockroach-data
     healthcheck:
-      test: ["CMD", "cockroach", "sql", "--insecure", "--host=localhost:26257", "-e", "SELECT 1"]
+      test:
+        [
+          "CMD",
+          "cockroach",
+          "sql",
+          "--insecure",
+          "--host=localhost:26257",
+          "-e",
+          "SELECT 1",
+        ]
       interval: 5s
       timeout: 5s
       retries: 12
@@ -18,7 +27,12 @@ services:
     image: tic-tac-toe-nakama-plugin:latest
     volumes:
       - plugin_output:/output
-    entrypoint: ["/bin/sh", "-c", "cp /tic-tac-toe-nakama.so /output/ && tail -f /dev/null"]
+    entrypoint:
+      [
+        "/bin/sh",
+        "-c",
+        "cp /tic-tac-toe-nakama.so /output/ && tail -f /dev/null",
+      ]
 
   nakama-migrate:
     image: heroiclabs/nakama:3.22.0
@@ -26,11 +40,21 @@ services:
       cockroachdb:
         condition: service_healthy
     entrypoint: ["/nakama/nakama"]
-    command: ["migrate", "up", "--database.address", "root@cockroachdb:26257/nakama?sslmode=disable"]
+    command:
+      [
+        "migrate",
+        "up",
+        "--database.address",
+        "root@cockroachdb:26257/nakama?sslmode=disable",
+      ]
     restart: on-failure
 
   nakama:
     image: heroiclabs/nakama:3.22.0
+    ports:
+      - "7350:7350"
+      - "7349:7349"
+      - "7351:7351"
     depends_on:
       cockroachdb:
         condition: service_healthy
