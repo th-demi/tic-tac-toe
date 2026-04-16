@@ -51,10 +51,10 @@ services:
 
   nakama:
     image: heroiclabs/nakama:3.22.0
-    ports:
-      - "7350:7350"
-      - "7349:7349"
-      - "7351:7351"
+    expose:
+      - "7350"
+      - "7349"
+      - "7351"
     depends_on:
       cockroachdb:
         condition: service_healthy
@@ -67,6 +67,18 @@ services:
       - ../nakama/local.yml:/nakama/data/local.yml
     entrypoint: ["/nakama/nakama"]
     command: ["--config", "/nakama/data/local.yml"]
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - /etc/letsencrypt:/etc/nginx/ssl:ro
+    depends_on:
+      - nakama
     restart: unless-stopped
 
 volumes:
